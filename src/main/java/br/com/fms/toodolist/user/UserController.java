@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -16,15 +18,18 @@ public class UserController {
     private IUserRepository userRepository;
 
     @PostMapping("/create")
-    public ResponseEntity create(@RequestBody UserModel user) {
+    public ResponseEntity<?> create(@RequestBody UserModel user) {
 
         var userlocal = this.userRepository.findByUserName(user.getUserName());
 
         if (userlocal != null) {
-            //throw new RuntimeException("Usuário já cadastrado");
             return ResponseEntity.badRequest().body("Usuário já cadastrado");
         }
 
+        var hash = BCrypt.withDefaults()
+                   .hashToString(12, user.getPassword().toCharArray());
+        //set password com o hash
+        user.setPassword(hash);
         var userCreate = this.userRepository.save(user);
         return ResponseEntity.created(null).body(userCreate);
     }
